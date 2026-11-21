@@ -1,6 +1,6 @@
 # TalentSol - Applicant Tracking System Learning Project (Machine Learning Component)
 
-This repository contains the machine learning component of the TalentSol project, focusing on training supervised classifiers to predict and recommend candidates for prioritization for a given job role and description. This is a learning project exploring different text embedding techniques and ensemble methods for a real-world recruitment use case.
+This repository contains the machine learning component of the TalentSol project. It trains supervised classifiers to prioritize candidates for a job role and description. This learning project compares text embedding techniques and ensemble methods on a fixed template Kaggle recruitment dataset.
 
 > **Important: the saved model uses Ethnicity.** The saved XGBoost pipeline one hot encodes an Ethnicity column as an input. The Ethnicity values in the training data are mostly national origin labels, such as Chinese, Irish and Nigerian. Using this input to screen candidates is not acceptable for real hiring. I plan to retrain the model without Ethnicity, Race1 and Race2. Race1 and Race2 are already excluded from the saved model. The reported metrics must be measured again after retraining. This model is a learning artifact. Do not use it for real hiring decisions. See [Fairness](#fairness) and [Limitations](#limitations).
 
@@ -60,7 +60,7 @@ We explored and tuned the following model configurations:
 15. **Hybrid Voting Classifier Ensemble:** A Voting Classifier combining predictions from a selection of the implemented individual models and ensemble methods. Word2Vec and FastText embedded models were excluded due to issues with out-of-vocabulary words during cross-validation.
 16. **Hybrid Stacking Ensemble:** A Stacking Classifier combining predictions from a selection of the implemented individual models and ensemble methods with a Logistic Regression meta-classifier. Word2Vec and FastText embedded models were excluded due to issues with out-of-vocabulary words during cross-validation.
 
-The models were evaluated on standard metrics (Accuracy, Precision, Recall, F1-score, ROC AUC) on a 20 percent test split. I drew this split from the data after oversampling. Some test rows duplicate training rows, so the test split is not independent and the test results are likely optimistic. Crucially, **Precision-Recall curves** were analyzed for each model's predicted probabilities (using Out-of-Fold predictions on the training data), and **decision thresholds were optimized to achieve a target recall level** (approximately 70%). This optimization aligns the model's decision-making with the project's goal of prioritizing candidates and minimizing false negatives. Confusion matrices were visualized at these optimized thresholds to understand the specific performance trade-offs.
+I evaluated the models with Accuracy, Precision, Recall, F1 score, and ROC AUC on a 20 percent test split. I drew the split after oversampling. Some test rows duplicate training rows, so the split is not independent and the results are likely optimistic. I used out of fold training predictions to create precision recall curves and tune thresholds toward a recall target of 0.700. I also plotted confusion matrices at the tuned thresholds.
 
 **Methodology for Prediction (How the Model Makes a Prediction):**
 
@@ -78,16 +78,16 @@ I decided that protected characteristics must not be inputs to a screening model
 
 The models were evaluated at decision thresholds tuned to reach about 70% recall on out of fold predictions from the upsampled training data. A comparison was then made on the 20 percent test split, which I drew after oversampling, using both default (0.5) and optimized thresholds. All results below come from the Kaggle dataset and must be measured again after retraining without Ethnicity. Key findings include:
 
-*   **Impact of Threshold Optimization:** Optimizing the decision threshold significantly impacted the trade-off between Precision and Recall for most models compared to using the default 0.5 threshold. Models were able to achieve higher recall, often at the cost of reduced precision, as clearly shown in the performance comparison plots in the notebook.
+*   **Impact of Threshold Optimization:** Changing the decision threshold changed precision and recall. In the notebook results, increases in recall often reduced precision.
 *   **Target Recall Achievement:** 10 out of the 16 evaluated models achieved or exceeded the target recall of 70% on the test split when using their optimized thresholds.
 *   **Selected Model:** I selected the **XGBoost Classifier Ensemble** for the saved pipeline. On the test split at its tuned threshold, it reached recall 0.703 and precision 0.567. It tied with the Hybrid Stacking Ensemble for the highest precision among models that met the recall target. I did not measure inference speed. By F1 score, the notebook ranks the HashingVectorizer Decision Tree first, with recall 0.819 and precision 0.526.
 *   **Hybrid Stacking Ensemble Performance:** The **Hybrid Stacking Ensemble** reached recall 0.701 and precision 0.567 on the test split. It tied with XGBoost for the highest precision among models that met the recall target.
 *   **HashingVectorizer Ensemble Performance:** The **Extra Trees Decision Tree Ensemble** and **Random Forest Decision Tree Ensemble** both use HashingVectorizer for text preprocessing. At their optimized thresholds on the test split, Extra Trees reached recall 0.728 and precision 0.525, and Random Forest reached recall 0.731 and precision 0.533.
-*   **Gradient Boosting Models:** LightGBM (achieving ~72% recall and ~56% precision) also performed well on the test set at its optimized threshold, exceeding the target recall with competitive precision. Gradient Boosting (~71% recall and ~54% precision) also met the target.
+*   **Gradient Boosting Models:** On the test split at their tuned thresholds, LightGBM reached recall 0.718 and precision 0.560. Gradient Boosting reached recall 0.709 and precision 0.542.
 *   **AdaBoost Performance:** At the default threshold, AdaBoost reached recall 0.605 and precision 0.557. At its tuned threshold, it reached recall 0.699 and precision 0.548 on the test split, just below the target.
-*   **Averaging vs. Voting/Stacking:** The simple Averaging ensemble (~69% recall, ~55% precision) performed reasonably well, just slightly missing the 70% recall target on the test set. The Hybrid Voting ensemble reached recall 0.698 and precision 0.551, just below the target.
+*   **Averaging vs. Voting/Stacking:** The Averaging ensemble reached recall 0.689 and precision 0.547 on the test split. The Hybrid Voting ensemble reached recall 0.698 and precision 0.551. Both fell below the recall target of 0.700.
 *   **Word Embeddings vs. Vectorizers:** The CountVectorizer, HashingVectorizer and Word2Vec single trees met the recall target on the test split. The TF-IDF tree (recall 0.200) and the FastText tree (recall 0.464) did not.
-*   **Best Performers for Prioritization:** Considering the goal of prioritizing candidates, high recall, while maintaining reasonable precision on the test split, the **XGBoost Classifier Decision Tree Ensemble** and the **Hybrid Stacking Ensemble** achieved the 70% recall target with the highest precision, ~57%. The **HashingVectorizer Decision Tree Ensemble** (both Extra Trees and Random Forest) also met the target recall (~73%) with slightly lower precision (~53%), representing a different point on the precision-recall trade-off curve that might be acceptable depending on the specific business needs. The **Gradient Boosting Classifier** and **LightGBM Classifier** also met the target recall with competitive precision.
+*   **Models at the Recall Target:** XGBoost and Hybrid Stacking reached the highest precision, 0.567, among models that met the recall target of 0.700 on the test split. Extra Trees reached recall 0.728 and precision 0.525. Random Forest reached recall 0.731 and precision 0.533. Gradient Boosting and LightGBM also met the recall target. These results come from a split made after oversampling.
 *   **Multi-view Learning:** Multi-view Learning was explored theoretically, identifying text and categorical data as potential views and discussing fusion strategies, benefits, and challenges, concluding that a full implementation was outside the current scope but laid the theoretical foundation.
 
 ### Conceptual Strengths of Decision Tree Models
@@ -95,10 +95,10 @@ The models were evaluated at decision thresholds tuned to reach about 70% recall
 Decision Tree models and their ensembles are well-suited for this text matching task due to several conceptual strengths:
 
 *   **Handling Non-linear Relationships and Feature Interactions:** They naturally capture complex, non-linear relationships and interactions between features without assuming linear boundaries.
-*   **Tolerance to Irrelevant Features:** They are relatively robust to including irrelevant or noisy features.
+*   **Irrelevant Features:** This project did not test model robustness to irrelevant or noisy features.
 *   **Interpretability (for individual trees):** Individual trees are highly interpretable, providing rule sets for predictions.
 *   **No Assumptions about Data Distribution:** They are non-parametric, suitable for complex feature distributions like text and categorical data.
-*   **Engineering Complexity and Cost vs. Neural Networks:** Compared to large neural networks (BERT, LLMs), Decision Tree models generally have significantly lower engineering complexity, computational costs for training and inference, and smaller memory footprints, making them more practical for deployment in resource-constrained environments like an ATS.
+*   **Engineering Comparison:** This project did not measure engineering effort, training cost, inference cost, or memory use against neural network models.
 
 ## Decision Trees and Data Samples
 
@@ -137,23 +137,23 @@ The current pipeline expects an Ethnicity column. Do not use it to score real ca
 
 For integrating this model into a production ATS (like TalentSol), consider these principles and recommended services. These recommendations apply to a retrained model without protected attributes, not to the current saved pipeline.
 
-*   **Start Simple and Iterate:** Begin with a straightforward and lightweight architecture. This is a **key engineering tenet**. For a problem like initial candidate screening, which involves handling a high volume of candidates and prioritizing for high recall, starting simple allows for faster experimentation and testing to quickly determine if the solution is effective before adding complexity. Avoid unnecessary complexity ("bloat") that could negatively impact inference performance or operational costs. Iterate and add complexity only when necessary to meet specific requirements.
-*   **Explainability and Transparency Document:** Create a clear and easy-to-understand document explaining how the model works, its limitations, the data used, and how predictions are made. This document is crucial for users of the system (recruiters, HR personnel) and other stakeholders (business leads, legal) to build trust, ensure fair usage, and understand the model's impact on the hiring process.
-*   **Real-time Data Pipeline:** Implement an efficient pipeline to preprocess new applicant data using the loaded pipeline's transformers. Recommended services for building data pipelines include serverless functions (e.g., Cloud Functions, Lambda), containerization platforms (e.g., Cloud Run, Kubernetes), or batch processing services (e.g., Dataflow, EMR) depending on latency and throughput requirements.
+*   **Start Simple and Iterate:** Start with the current pipeline. Add complexity only when a measured requirement calls for it.
+*   **Explainability and Transparency Document:** Document the model, its limitations, the data, and how it produces predictions.
+*   **Data Pipeline:** Build a pipeline that applies the saved transformers to new applicant data. Select a deployment service after measuring latency and throughput requirements.
 *   **Data and Model Storage:** Securely store raw data, processed data, and the trained model pipeline. Cloud Object Storage (e.g., Cloud Storage, S3, Blob Storage) is suitable for raw data and model files. Managed databases (e.g., Cloud SQL, RDS, Azure SQL) can store structured applicant data. Consider a Feature Store for managing and serving features consistently.
 *   **Latency:** Monitor and optimize prediction latency. Ensemble models require running multiple base models, which can increase latency compared to a single model.
 *   **Memory:** Be mindful of the memory footprint of the loaded pipeline and its multiple base estimators. HashingVectorizer stores no vocabulary, so it uses little memory. Other parts of the pipeline and the ensembles can still need a lot of memory. High-RAM runtimes are beneficial for training and inference.
 *   **Vector Databases:** While the selected XGBoost model utilizes HashingVectorizer, understanding the architectural implications of dense embedding-based models (like Word2Vec or FastText if successfully integrated in the future) is valuable for future iterations. For models utilizing dense vector embeddings, consider the use of a dedicated vector database for efficient storage, indexing, and retrieval at scale.
-*   **Scalability:** Deploy the model as a scalable service using platforms like Kubernetes or serverless functions to handle varying request loads. The generally efficient inference of tree-based models facilitates horizontal scaling.
+*   **Scalability:** Measure latency, memory use, and throughput before selecting a deployment platform. This project did not benchmark those properties.
 *   **Monitoring:** Implement monitoring for performance tracking (e.g., inference time, error rates), data drift (changes in input data characteristics), and model drift (degradation in model performance over time).
-*   **API Endpoint:** Provide a clear and well-documented API for seamless integration with other components of the ATS.
+*   **API Endpoint:** Provide a documented API for integration with the ATS.
 *   **Security:** Ensure secure handling and storage of sensitive applicant data and the model artifact.
 *   **Versioning:** Use a system for model versioning to manage updates and rollbacks effectively.
-*   **Computational Resources:** Using powerful hardware accelerators (like GPUs or TPUs if applicable for future models, or simply high-CPU/high-RAM VMs for current models) can significantly speed up training and inference, especially with large datasets and complex ensembles. The high RAM requirements observed during this project underscore the need for sufficient memory resources in the deployment environment.
+*   **Computational Resources:** Measure training time, inference time, and memory use before selecting CPU, GPU, TPU, or memory capacity. This project does not report those benchmarks.
 *   **Automated Retraining:** Set up automated pipelines for retraining the model periodically with new data to ensure it remains relevant and accurate over time.
 *   **Model Interpretation Considerations:** If providing explanations for individual predictions is a requirement, for example, for recruiters, integrate model interpretation techniques, such as SHAP values, alongside the deployed model.
 *   **Need for a Human-Centered User Interface:** A human-centered application user interface is still required to serve the models and to offer their intended assistive roles for recruiters or recruitment teams. The model is a tool to assist, not replace, human expertise.
-*   **Sub-symbolic Human Intuition is Still Crucial:** The models can play an important assistive role to save time and undifferentiated heavy lifting, but users (recruiters) should also rely on a variety of other tools (BI tools, spreadsheets, manual review) and their own expertise and intuition, especially for candidates not classified as "Best Match" or for identifying exceptional talent from unexpected backgrounds.
+*   **Human Review:** Recruiters must review every candidate. They should not use the model score as the final hiring decision.
 
 ## Model Risk: Keyword Matching
 
@@ -193,7 +193,7 @@ Refer to the code notebook for detailed implementation of the preprocessing, mod
 
 ## Corrections
 
-The following statements were corrected on **November 20, 2026** after a check against the notebook outputs, the saved model file and the committed training CSV. The model, the notebook and the data are unchanged. Only the README was wrong or incomplete.
+On **November 20, 2026**, I checked the statements below against the notebook outputs, saved model file, and committed training CSV and corrected them. I did not change the model, notebook, or data. The earlier README was wrong or incomplete.
 
 | Item | Previously stated | Corrected to | Cause |
 |------|-------------------|--------------|-------|
@@ -210,5 +210,7 @@ The following statements were corrected on **November 20, 2026** after a check a
 | Word embeddings vs. vectorizers | TF-IDF and FastText "performed comparably" and also "showed poor performance" | TF-IDF tree recall 0.200 and FastText tree recall 0.464, both below target | The paragraph contradicted itself. |
 | HashingVectorizer memory | "can be memory-intensive" | Uses little memory because it stores no vocabulary | Contradicted the scikit-learn documentation and the earlier line in this README |
 | Resume Optimization Tips | Tips for applicants to raise their score | Replaced with a model risk note | The tips described how to game a model that also scores Ethnicity. |
+| Approximate metrics | "~72% recall and ~56% precision" and similar approximations for LightGBM, Gradient Boosting, Averaging, Extra Trees and Random Forest | Exact three decimal test split values from notebook cell 59 | The approximations hid the exact notebook values. |
+| Unmeasured claims | Robustness to irrelevant features, lower engineering cost than neural networks, and efficient horizontal scaling | States that the project did not measure these properties | No evaluation or benchmark in the notebook |
 
 The 16 model count, the 10 of 16 target count, the XGBoost threshold of 0.5027, and the recall and precision figures for XGBoost, Hybrid Stacking, Extra Trees, Random Forest, LightGBM, Gradient Boosting and Averaging were rechecked against notebook cells 57 and 59 and are accurate as originally published.
