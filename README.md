@@ -135,7 +135,7 @@ The current pipeline expects an Ethnicity column. Do not use it to score real ca
 
 ## Engineering Integration Recommendations
 
-For integrating this model into a production ATS (like TalentSol), consider these principles and recommended services. These recommendations apply to a retrained model without protected attributes, not to the current saved pipeline.
+Consider these principles and recommended services before integrating a retrained model, without protected attributes, into a production ATS. TalentSol is an MVP learning project and is not deployed for real hiring. These recommendations do not apply to the current saved pipeline.
 
 *   **Start Simple and Iterate:** Start with the current pipeline. Add complexity only when a measured requirement calls for it.
 *   **Explainability and Transparency Document:** Document the model, its limitations, the data, and how it produces predictions.
@@ -212,5 +212,6 @@ On **November 20, 2026**, I checked the statements below against the notebook ou
 | Resume Optimization Tips | Tips for applicants to raise their score | Replaced with a model risk note | The tips described how to game a model that also scores Ethnicity. |
 | Approximate metrics | "~72% recall and ~56% precision" and similar approximations for LightGBM, Gradient Boosting, Averaging, Extra Trees and Random Forest | Exact three decimal test split values from notebook cell 59 | The approximations hid the exact notebook values. |
 | Unmeasured claims | Robustness to irrelevant features, lower engineering cost than neural networks, and efficient horizontal scaling | States that the project did not measure these properties | No evaluation or benchmark in the notebook |
+| TalentSol status | "a production ATS (like TalentSol)" | TalentSol is an MVP learning project, not deployed for real hiring | The sentence implied that TalentSol is a production system. Corrected on November 20, 2026. |
 
 The 16 model count, the 10 of 16 target count, the XGBoost threshold of 0.5027, and the recall and precision figures for XGBoost, Hybrid Stacking, Extra Trees, Random Forest, LightGBM, Gradient Boosting and Averaging were rechecked against notebook cells 57 and 59 and are accurate as originally published.
